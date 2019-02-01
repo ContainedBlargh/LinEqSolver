@@ -2,7 +2,12 @@
 
 open System
 
+
+(*
+Takes a float32[,] and converts it into a human-readable string.
+*)
 let stringify (m: float32[,]) : string =
+  //Imperative solution ahead.
   let mutable output = ""
   for r = 0 to Array2D.length1 m - 1 do
     output <- output + "[ "

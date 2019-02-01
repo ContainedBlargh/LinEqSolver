@@ -4,11 +4,17 @@
   This should come with the side benefit of exposing an algorithm that will make it easier
   for me to solve the equations in the future.
 
-  First off, we just launch a command window that parses commands.
+  For now, this just launches a command window that parses commands.
 *)
 open System
 open Command
 
+(*
+Recursively reads input from the console.
+Allows the user to input more than one line,
+but requires that the user terminates their command with ';'.
+The returned string is a multiline string, lines are separated with Environment.NewLine.
+*)
 let readInput (): string = 
   Console.Write("> ")
 
@@ -22,7 +28,7 @@ let readInput (): string =
 
 (*
 The main loop of the program.
-Recursively loops until stopped.
+Recursively loops until stopped by the user.
 *)
 let rec mainLoop (state: Map<string, float32[,]>) =
   let rawInput = readInput ()
@@ -30,7 +36,8 @@ let rec mainLoop (state: Map<string, float32[,]>) =
 
   let executeCommand cmd: (string * (Map<string, float32[,]>)) =
     match cmd with
-    | Exit -> exit 0
+    | Exit -> printfn "Exiting..."; exit 0 //I thought about adding another parameter to the method to signify if it should end.
+                     //But this would add a bit more complexity, so I went for the dumb solution.
     | Define(name, matrix) -> let matStr = (Environment.NewLine + Matrix.stringify matrix)
                               let output = sprintf "Defined system '%s': %s." name matStr
                               (output, Map.add name matrix state)
