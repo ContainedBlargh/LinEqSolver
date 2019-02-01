@@ -42,8 +42,9 @@ let rec mainLoop (state: Map<string, float32[,]>) =
                               let output = sprintf "Defined system '%s': %s." name matStr
                               (output, Map.add name matrix state)
     | Solve(name) -> Map.tryFind name state
-                     |> Option.map (fun mat -> Solver.solve mat, state)
+                     |> Option.map (fun mat -> Solver.solve mat |> (fun (sol, steps) -> steps, Map.add name sol state))
                      |> Option.defaultWith (fun () -> (sprintf "Unknown system '%s'." name, state))
+
   commandOpt
   |> Option.map (executeCommand)
   |> Option.defaultWith (fun () -> let unknown = Array.item 0 (rawInput.Split(" "))
