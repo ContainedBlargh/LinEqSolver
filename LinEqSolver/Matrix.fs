@@ -46,3 +46,11 @@ Fold over the result columns.
 *)
 let foldResults (func: 'state -> float32 -> 'state) (state: 'state) (m: float32[,]): 'state =
   foldColumn func state m (Array2D.length2 m - 1)
+
+(*
+Produce a string representation of the results column.
+*)
+let stringifyResults (m: float32[,]): string =
+  let folder (strAcc: string, i: int) (res: float32): string * int =
+    (strAcc + sprintf "\tVariable %d = %0.2f" i res + Environment.NewLine, i + 1)
+  foldResults folder ("", 1) m |> fst

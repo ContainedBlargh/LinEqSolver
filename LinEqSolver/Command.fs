@@ -2,10 +2,15 @@
 
 open System.Text.RegularExpressions
 open System
+open Solver
 
 type Command = 
   | Define of string * float32[,]
-  | Solve of string
+  | Check of string
+  | AddRowTo of string * int * float32 * int
+  | ScaleRow of string * int * float32
+  | SwapRows of string * int * int
+  | Trace of string
   | Exit
 
 let (|Regex|_|) pattern input =
@@ -48,6 +53,11 @@ let parseCommand (input: string) : Command option =
   let lower = input.ToLower()
   match (lower) with
   | Regex @"def (\w*) ?(\r|\n|.*);" [name; matrix] -> Some(Define(name, (parseMatrix matrix)))
-  | Regex @"solve (\w*);" [name] -> Some(Solve(name))
+  | Regex @"check (\w*);" [name] -> Some(Check(name))
+  | Regex @"trace (\w*);" [name] -> Some(Trace(name))
+  | Regex @"(\w*)\.swap (\d+) (\d+);" [name; r1; r2] -> Some(SwapRows(name, r1 |> int, r2 |> int))
+  | Regex @"(\w*)\.add (\d+) (\d+);" [name; r1; r2] -> Some(AddRowTo(name, r1 |> int, 1.0f, r2 |> int))
+  | Regex @"(\w*)\.add (\d+) ([-+]?[0-9]*\.[0-9]+|[0-9]+) (\d+);" [name; r1; s; r2] -> Some(AddRowTo(name, r1 |> int, s |> float32, r2 |> int))
+  | Regex @"(\w*)\.scale (\d+) ([-+]?[0-9]*\.[0-9]+|[0-9]+);" [name; r1; s] -> Some(ScaleRow(name, r1 |> int, s |> float32))
   | Regex @"(?:exit|quit);" [] -> Some(Exit)
   | _ -> None

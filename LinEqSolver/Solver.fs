@@ -11,7 +11,6 @@ type Step =
   | AddRowTo of int * float32 * int //Add a multiple of one row to another row, save at the latter
   | ScaleRow of int * float32
   | SwapRows of int * int
-  | GiveUp
 
 let stepsToString (steps: Step list): string =
   failwith "TODO: implement Solver.stepsToString" 
@@ -22,7 +21,6 @@ let stepsToString (steps: Step list): string =
     | AddRowTo(src, scale, dest) -> sprintf "Added row %d multiplied by %0.2f to row %d." src scale dest
     | ScaleRow(i, scalar) -> sprintf "Scaled row %d with %.2f." i scalar
     | SwapRows(i, j) -> sprintf "Swapped row %d with row %d." i j
-    | GiveUp -> "No solution could be found. Sorry."
   
   if List.isEmpty steps then
     "0: The system is already solved."
@@ -56,7 +54,7 @@ let isSolved (matrix: float32[,]): bool =
 let l1 m = Array2D.length1 m
 let l2 m = Array2D.length2 m
 
-let addRowTo s scale d (m: float32[,]): float32[,] =
+let addRowTo s scale d (m: float32[,]): float32[,] * Step =
   let source = m.[s, 0..] |> Array.map (fun x -> x * scale)
   let dest = m.[d, 0..]
   let res = Array.map2 (fun x y -> x + y) source dest
@@ -67,18 +65,18 @@ let addRowTo s scale d (m: float32[,]): float32[,] =
     else
       m.[r, c]
 
-  Array2D.init (l1 m) (l2 m) initializer 
+  Array2D.init (l1 m) (l2 m) initializer, AddRowTo(s, scale, d)
 
-let scaleRow d scalar (m: float32[,]): float32[,] =
+let scaleRow d scalar (m: float32[,]): float32[,] * Step =
   let initializer r c =
     if r = d then
       m.[r, c] * scalar
     else
       m.[r, c]
   
-  Array2D.init (l1 m) (l2 m) initializer
+  Array2D.init (l1 m) (l2 m) initializer, ScaleRow(d, scalar)
 
-let swapRows i j (m: float32[,]): float32[,] =
+let swapRows i j (m: float32[,]): float32[,] * Step =
   let initializer r c =
     if r = i then
       m.[j, c]
@@ -87,7 +85,7 @@ let swapRows i j (m: float32[,]): float32[,] =
     else
       m.[r, c]
 
-  Array2D.init (l1 m) (l2 m) initializer
+  Array2D.init (l1 m) (l2 m) initializer, SwapRows(i, j)
 
 (*
 Another, important check.
@@ -100,27 +98,8 @@ let isInconsistent (m: float32[,]): bool =
   let sums = Matrix.foldCoefficients folder [] m
   List.fold2 (fun acc sum r -> if sum = 0.0f then acc && r = 0.0f else acc && true) true sums rhs
 
-(*
-The recursive step of the solving function.
-Should be private.
-*)
-let rec solveRec (steps: Step list) (matrix: float32[,]): (Step list) * float32[,] =
-  if isSolved matrix then
-    (List.rev steps, matrix)
-  else
-    if isInconsistent matrix then
-      (List.rev (GiveUp::steps), matrix)      
-    else
-      failwith "TODO: Implement the rest."
-  //Using the 3 types of steps, convert the given matrix to the echelon form
-  //If there is no solution, give up.
-  
-  //This is actually just a conventional dynamic programming problem;
-  //The task is to find the minimum required moves to solve the matrix
-  //Meaning that we try all combinations.
-  //Giving up should also be an option, some systems are unsolveable.
-  //Giving up should therefore be a costly move, but a finite move.
-
-let solve (matrix: float32[,]): float32[,] * string = 
-  solveRec [] matrix
-  |> fun (steps, matrix) -> (matrix, stepsToString steps)
+let check (matrix: float32[,]): string = 
+  match matrix with
+  | m when (isSolved m) -> "solved:" + Environment.NewLine + Matrix.stringifyResults m
+  | m when (isInconsistent m) -> "inconsistent:" + Environment.NewLine + Matrix.stringify m
+  | _ -> "not yet solved."
