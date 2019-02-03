@@ -12,6 +12,7 @@ type Command =
   | ScaleRow of string * int * float32
   | SwapRows of string * int * int
   | Trace of string * VarStyle option
+  | Help
   | Exit
 
 let (|Regex|_|) pattern input =
@@ -72,5 +73,6 @@ let parseCommand (input: string) : Command option =
   | Regex @"(\w*)\.add (\d+) (\d+)[\r|\n ]*;" [name; r1; r2] -> Some(AddRowTo(name, r1 |> int, 1.0f, r2 |> int))
   | Regex @"(\w*)\.add (\d+) ([-+]?\d*(?:\.\d+)?) (\d+)[\r|\n ]*;" [name; r1; s; r2] -> Some(AddRowTo(name, r1 |> int, s |> float32, r2 |> int))
   | Regex @"(\w*)\.scale (\d+) ([-+]?\d*(?:\.\d+)?)[\r|\n ]*;" [name; r1; s] -> Some(ScaleRow(name, r1 |> int, s |> float32))
+  | Regex @"(?:help)[\r|\n ]*;" [] -> Some(Help);
   | Regex @"(?:exit|quit)[\r|\n ]*;" [] -> Some(Exit)
   | _ -> None
