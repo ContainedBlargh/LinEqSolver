@@ -6,28 +6,36 @@ Needless to say, the magic is not defined yet :P
 module Solver
 
 open System
+open Matrix
 
 type Step =
-  | AddRowTo of int * float32 * int //Add a multiple of one row to another row, save at the latter
-  | ScaleRow of int * float32
-  | SwapRows of int * int
+  | AddRowTo of int * float32 * int * float32[,] //Add a multiple of one row to another row, save at the latter
+  | ScaleRow of int * float32 * float32[,]
+  | SwapRows of int * int * float32[,]
 
-let stepsToString (steps: Step list): string =
-  failwith "TODO: implement Solver.stepsToString" 
-  //TODO: take the list of steps and convert it into a human readable string.
-  //Should be fairly straightforward.
-  let stepToString (step: Step): string =
-    match step with
-    | AddRowTo(src, scale, dest) -> sprintf "Added row %d multiplied by %0.2f to row %d." src scale dest
-    | ScaleRow(i, scalar) -> sprintf "Scaled row %d with %.2f." i scalar
-    | SwapRows(i, j) -> sprintf "Swapped row %d with row %d." i j
-  
+let stepToString (styleOpt: VarStyle option) (step: Step) =
+  let stringify = 
+    match styleOpt with
+    | None -> Matrix.stringify
+    | Some(style) -> Matrix.texify style
+  match step with
+  | AddRowTo(src, scale, dest, mat) -> sprintf "Added row %d multiplied by %0.2f to row %d:" src scale dest 
+                                          + Environment.NewLine + stringify mat
+  | ScaleRow(i, scalar, mat) -> sprintf "Scaled row %d with %.2f:" i scalar + Environment.NewLine + stringify mat
+  | SwapRows(i, j, mat) -> sprintf "Swapped row %d with row %d:" i j + Environment.NewLine + stringify mat
+
+(*
+Prints the steps taken on a system as a string.
+The tex parameter determines whether to print matrices as latex matrices or not.
+*)
+
+let stepsToString (styleOpt: VarStyle option) (steps: Step list): string =
   if List.isEmpty steps then
-    "0: The system is already solved."
+    "0: No steps taken to solve this system yet."
   else
     steps
     |> List.mapi (fun i step -> (i, step))
-    |> List.fold (fun acc (i, step) -> acc + sprintf "%d: %s" i (stepToString step) + Environment.NewLine ) ""
+    |> List.fold (fun acc (i, step) -> acc + sprintf "%d: %s" i (stepToString styleOpt step) + Environment.NewLine ) ""
 
 (*
 Determine if the matrix is already solved.
@@ -49,7 +57,7 @@ let isSolved (matrix: float32[,]): bool =
       coefRow
       |> Array.fold innerFolder (false, true)
       |> fun (a, b) -> acc && a && b
-  Matrix.foldCoefficients (folder) true matrix
+  Matrix.foldCoefficientColumns (folder) true matrix
 
 let l1 m = Array2D.length1 m
 let l2 m = Array2D.length2 m
@@ -64,8 +72,9 @@ let addRowTo s scale d (m: float32[,]): float32[,] * Step =
       res.[c]
     else
       m.[r, c]
-
-  Array2D.init (l1 m) (l2 m) initializer, AddRowTo(s, scale, d)
+  
+  let m' = Array2D.init (l1 m) (l2 m) initializer
+  m', AddRowTo(s, scale, d, m')
 
 let scaleRow d scalar (m: float32[,]): float32[,] * Step =
   let initializer r c =
@@ -74,7 +83,8 @@ let scaleRow d scalar (m: float32[,]): float32[,] * Step =
     else
       m.[r, c]
   
-  Array2D.init (l1 m) (l2 m) initializer, ScaleRow(d, scalar)
+  let m' =  Array2D.init (l1 m) (l2 m) initializer
+  m', ScaleRow(d, scalar, m')
 
 let swapRows i j (m: float32[,]): float32[,] * Step =
   let initializer r c =
@@ -85,17 +95,18 @@ let swapRows i j (m: float32[,]): float32[,] * Step =
     else
       m.[r, c]
 
-  Array2D.init (l1 m) (l2 m) initializer, SwapRows(i, j)
+  let m' = Array2D.init (l1 m) (l2 m) initializer
+  m', SwapRows(i, j, m')
 
 (*
 Another, important check.
 This is one of the ways illustrated in the book that we can detect inconsistensies.
 *)
 let isInconsistent (m: float32[,]): bool =
-  let rhs = m.[l2 m - 1, 0..] |> Array.toList
+  let rhs = m.[0.., l2 m - 1] |> Array.toList
   let folder (acc: float32 list) coefRow = 
     (Array.sum coefRow)::acc
-  let sums = Matrix.foldCoefficients folder [] m
+  let sums = Matrix.foldCoefficientRows folder [] m
   List.fold2 (fun acc sum r -> if sum = 0.0f then acc && r = 0.0f else acc && true) true sums rhs
 
 let check (matrix: float32[,]): string = 

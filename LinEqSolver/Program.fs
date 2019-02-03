@@ -56,12 +56,12 @@ let rec mainLoop (matrices: Map<string, float32[,]>) (steps: Map<string, Step li
     | Define(name, matrix) -> let matStr = (Environment.NewLine + Matrix.stringify matrix)
                               let output = sprintf "Defined system '%s': %s." name matStr
                               (output, Map.add name matrix matrices, steps)
-    | Trace(name) -> Map.tryFind name steps |> Option.defaultWith (fun () -> []) |> Solver.stepsToString |> fun s -> (s, matrices, steps)
+    | Trace(name, varStyle) -> Map.tryFind name steps |> Option.defaultWith (fun () -> []) |> Solver.stepsToString varStyle |> fun s -> (s, matrices, steps)
     | Check(name) -> Map.tryFind name matrices
                      |> Option.map (fun mat -> let check = (Solver.check mat) in (sprintf "The system '%s' is %s" name check, matrices, steps))
                      |> execDefault name
     | AddRowTo(name, r1, s, r2) -> Map.tryFind name matrices
-                                   |> execUpdate name (fun mat -> Solver.addRowTo r1 s r2 mat) (sprintf "Added %d * %0.2f to %d in '%s'" r1 s r1 name)
+                                   |> execUpdate name (fun mat -> Solver.addRowTo r1 s r2 mat) (sprintf "Added %d * %0.2f to %d in '%s'" r1 s r2 name)
                                    |> execDefault name
     | ScaleRow(name, r, s) -> Map.tryFind name matrices
                               |> execUpdate name (fun mat -> Solver.scaleRow r s mat) (sprintf "Scaled %d with %0.2f in '%s'" r s name)
