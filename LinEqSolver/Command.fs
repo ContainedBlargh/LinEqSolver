@@ -61,6 +61,7 @@ let parseVarStyle (input: string): VarStyle =
   | "alpha" -> Alphabetical
   | "one" -> OneIndexed
   | "zero" -> ZeroIndexed
+  | _ -> ZeroIndexed
 
 let parseCommand (input: string) : Command option = 
   let lower = input.ToLower()
