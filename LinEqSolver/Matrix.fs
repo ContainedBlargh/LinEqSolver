@@ -31,12 +31,15 @@ Takes a matrix and prints it as a latex string.
 let texify (style: VarStyle) (m: float32[,]) : string =
   let varl = Array2D.length1 m
   let lbl i = 
-    match style with
-    | Geometric when varl < 3 -> geo.[i]
-    | Alphabetical when varl < 26 -> alpha.[i]
-    | ZeroIndexed -> sprintf "x_{%d}" i
-    | OneIndexed -> sprintf "x_{%d}" (i + 1)
-    | _ -> sprintf "x_{%d}" i
+    if i < varl then
+      match style with
+      | Geometric when varl < 4 -> geo.[i]
+      | Alphabetical when varl < 27 -> alpha.[i]
+      | ZeroIndexed -> sprintf "x_{%d}" i
+      | OneIndexed -> sprintf "x_{%d}" (i + 1)
+      | _ -> sprintf "x_{%d}" i
+    else
+      "" //If this is just a value, no label is required.
   //Imperative solution ahead.
   let l2 = Array2D.length2 m
   let cs = String.replicate (l2 - 1) "c"
